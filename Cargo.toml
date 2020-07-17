@@ -13,6 +13,9 @@ env_logger = "0.7.1"
 async-std = "1.6.2"
 log = "0.4.11"
 
+[dev-dependencies]
+mockall = "0.7.1"
+
 # Optimize for size of the release build
 # see https://github.com/johnthagen/min-sized-rust
 [profile.release]  
