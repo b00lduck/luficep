@@ -24,6 +24,8 @@ fn main() {
     // Initialize the logger from the environment
     env_logger::init();
 
+    info!("Lucifep starting...");
+
     let host = env::args().nth(1).unwrap_or_else(||
         "tcp://localhost:1883".to_string()
     );
@@ -37,7 +39,7 @@ fn main() {
 
     // Create the client connection
     let mut cli = mqtt::AsyncClient::new(create_opts).unwrap_or_else(|e| {
-        error!("Error creating the client: {:?}", e);
+        error!("Error creating the MQTT client: {:?}", e);
         process::exit(1);
     });
 
