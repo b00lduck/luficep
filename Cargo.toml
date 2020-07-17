@@ -1,0 +1,22 @@
+[package]
+name = "luficep"
+version = "0.1.0"
+authors = ["Daniel Zerlett <zerlett@network-innovation.de>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+paho-mqtt = { git = "https://github.com/eclipse/paho.mqtt.rust.git" }
+futures = "0.3.5"
+env_logger = "0.7.1"
+async-std = "1.6.2"
+log = "0.4.11"
+
+# Optimize for size of the release build
+# see https://github.com/johnthagen/min-sized-rust
+[profile.release]  
+opt-level = 'z'  
+lto = true
+panic = 'abort'
+codegen-units = 1
