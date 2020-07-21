@@ -3,7 +3,11 @@ use mockall::{automock, predicate::*};
 
 use log::{info};
 
-pub struct MqttHandler {}
+use rlua::{Lua, Function, Error};
+
+pub struct MqttHandler {
+    pub lua: Lua
+}
 
 impl MqttHandler {}
 
@@ -15,6 +19,15 @@ pub trait HandleMqttMessage {
 impl HandleMqttMessage for MqttHandler {
     fn handle_mqtt_message(&self, msg: paho_mqtt::message::Message) {
         info!("{}", msg);
+
+        let _res = self.lua.context(|lua_context| {
+    
+            let globals = lua_context.globals();
+            let fn_test: Function = globals.get("test")?;        
+            fn_test.call::<_,_>(())?;
+     
+            Ok::<(), Error>(())
+         });        
     }    
 }
 

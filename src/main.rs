@@ -7,7 +7,7 @@ use crate::handler::mqtt::HandleMqttMessage;
 use std::{
     env,
     process,
-    time::Duration
+    time::Duration,
 };
 use futures::{
     executor::block_on,
@@ -15,6 +15,7 @@ use futures::{
 };
 use paho_mqtt as mqtt;
 use log::{info, warn, error};
+use rlua::{Lua, Error};
 
 // The topics to which we subscribe.
 const TOPICS: &[&str] = &[ "test", "hello" ];
@@ -25,6 +26,28 @@ fn main() {
     env_logger::init();
 
     info!("Lucifep starting...");
+
+    let lua = Lua::new();
+    let res = lua.context(|lua_context| {
+
+       lua_context.load(r#"
+            print("hello world from LUA!")
+            function test()
+                print("HELLO from TEST")
+            end
+       "#).exec()?;
+       Ok::<(), Error>(())
+    });
+
+    match res {
+        Err(err) => {
+            error!("Error loading LUA script: {}", err);
+            return            
+        }
+        Ok(_) => {
+            info!("Loaded LUA script.");
+        }
+    }
 
     let host = env::args().nth(1).unwrap_or_else(||
         "tcp://localhost:1883".to_string()
@@ -43,7 +66,9 @@ fn main() {
         process::exit(1);
     });
 
-    let mqtt_handler = mqtt_handler::MqttHandler {};
+    let mqtt_handler = mqtt_handler::MqttHandler {
+        lua: lua
+    };
 
     if let Err(err) = block_on(async {
         // Get message stream before connecting.
@@ -98,4 +123,5 @@ fn main() {
     }) {
         error!("{}", err);
     }
+
 }
