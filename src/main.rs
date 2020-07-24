@@ -1,8 +1,5 @@
 mod handler;
-
-use crate::handler::mqtt as mqtt_handler;
-
-use crate::handler::mqtt::HandleMqttMessage;
+mod luaengine;
 
 use std::{
     env,
@@ -15,9 +12,11 @@ use futures::{
 };
 use paho_mqtt as mqtt;
 use log::{info, warn, error};
-use rlua::{Lua, Error};
 
-// The topics to which we subscribe.
+use crate::handler::mqtt::MqttHandler;
+use crate::luaengine::luaengine::LuaEngine;
+
+// The topics to which we subscribe.c
 const TOPICS: &[&str] = &[ "test", "hello" ];
 const QOS: &[i32] = &[2, 2];
 
@@ -27,27 +26,12 @@ fn main() {
 
     info!("Lucifep starting...");
 
-    let lua = Lua::new();
-    let res = lua.context(|lua_context| {
+    // initialize LUA engine
+    let lua_engine: crate::luaengine::luaengine::LuaEngineImpl = luaengine::luaengine::LuaEngine::new();
+    lua_engine.initialize();
 
-       lua_context.load(r#"
-            print("hello world from LUA!")
-            function test()
-                print("HELLO from TEST")
-            end
-       "#).exec()?;
-       Ok::<(), Error>(())
-    });
-
-    match res {
-        Err(err) => {
-            error!("Error loading LUA script: {}", err);
-            return            
-        }
-        Ok(_) => {
-            info!("Loaded LUA script.");
-        }
-    }
+    // initialize MQTT handler
+    let mqtt_handler: crate::handler::mqtt::MqttHandlerImpl = handler::mqtt::MqttHandler::new(lua_engine);
 
     let host = env::args().nth(1).unwrap_or_else(||
         "tcp://localhost:1883".to_string()
@@ -66,9 +50,6 @@ fn main() {
         process::exit(1);
     });
 
-    let mqtt_handler = mqtt_handler::MqttHandler {
-        lua: lua
-    };
 
     if let Err(err) = block_on(async {
         // Get message stream before connecting.
@@ -99,7 +80,7 @@ fn main() {
         while let Some(msg_opt) = strm.next().await {            
             if let Some(msg) = msg_opt {
                 // A "Some" means we have a new message
-                mqtt_handler.handle_mqtt_message(msg)
+                mqtt_handler.handle_mqtt_message(msg);
             } else {
                 // A "None" means we were disconnected. Try to reconnect...
                 warn!("Lost connection. Attempting reconnect.");

@@ -3,31 +3,29 @@ use mockall::{automock, predicate::*};
 
 use log::{info};
 
-use rlua::{Lua, Function, Error};
-
-pub struct MqttHandler {
-    pub lua: Lua
-}
-
-impl MqttHandler {}
+use crate::luaengine::luaengine::LuaEngine;
+use crate::luaengine::luaengine::LuaEngineImpl;
 
 #[cfg_attr(test, automock)]
-pub trait HandleMqttMessage {
+pub trait MqttHandler {
+    fn new(lua_engine: LuaEngineImpl) -> Self;
     fn handle_mqtt_message(&self, msg: paho_mqtt::message::Message);
 }
 
-impl HandleMqttMessage for MqttHandler {
+pub struct MqttHandlerImpl {
+    pub lua_engine: LuaEngineImpl
+}
+
+impl MqttHandler for MqttHandlerImpl {
+    fn new(lua_engine: LuaEngineImpl) -> MqttHandlerImpl {
+        MqttHandlerImpl {
+            lua_engine: lua_engine
+        }
+    }
+
     fn handle_mqtt_message(&self, msg: paho_mqtt::message::Message) {
         info!("{}", msg);
-
-        let _res = self.lua.context(|lua_context| {
-    
-            let globals = lua_context.globals();
-            let fn_test: Function = globals.get("test")?;        
-            fn_test.call::<_,_>(())?;
-     
-            Ok::<(), Error>(())
-         });        
+        self.lua_engine.test();
     }    
 }
 
